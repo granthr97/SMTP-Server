@@ -1,2 +1,2 @@
 # SMTP-Server
-Python files for a basic SMTP server for the Internet Services and Protocols course
+Basic SMTP server for the Internet Services and Protocols course. Coded in Python.
