@@ -1,4 +1,4 @@
-# NOTE: subdirectory "forward" must already exist in current directory for code to work!"
+# NOTE: subdirectory "forward" must already exist in current directory for code to work!
 
 # Saves and prints an individual line of user-input; process input depending on current state
 def processinput():
