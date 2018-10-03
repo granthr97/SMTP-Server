@@ -1,36 +1,39 @@
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------
-#
-# Note: The parser processes input line by line until ctrl + d is typed.
-#
-# Each line is processed depending on what state the machine is in: whether it expects a MAIL, RCPT, or DATA command, or whether it expects text.
-#
-# Each of those states has its own method which is called by processinput().
-#
-# Each of those methods return an appropriate error- or success- code.
-#
-# If successful, the methods change the state to the next appropriate state (i.e. MAIL -> RCPT, RCPT -> DATA, DATA -> DATA, DATA -> TEXT, TEXT -> MAIL)
-#
-# The state stays the same until a valid command is entered.
-#
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# NOTE: directory "forward" must already exist for code to work!"
 
-
-def processinput():                                     # Saves and prints an individual line of user-input; process input depending on current state
+# Saves and prints an individual line of user-input; process input depending on current state
+def processinput():
     global msg
     msg = raw_input()
     print(msg)
 
-    code = STATE_MAP[state]()				# Execute code corresponding to the current state
+    STATE_MAP = {
+    'MAIL' : process_MAIL,
+    'RCPT' : process_RCPT,
+    'DATA' : process_DATA,
+    'TEXT' : process_TEXT
+    }
+
+    RESPONSE_MAP = {
+    250 : '250 OK',
+    354 : '354 Start mail input; end with <CRLF>.<CRLF>',
+    500 : '500 Syntax error: command unrecognized',
+    501 : '501 Syntax error in parameters or arguments',
+    503 : '503 Bad sequence of commands',
+    }
+	
+    # Execute code corresponding to the current state
+    code = STATE_MAP[state]()				
     if code != -1:
-        print(RESPONSE_MAP[code])			# processTEXT state returns -1 unless <CRLF>.<CRLF> is entered
+	# processTEXT state returns -1 unless <CRLF>.<CRLF> is entered
+        print(RESPONSE_MAP[code])
 
-
+	
 def setstate(newstate):
     global state
     state = newstate
 
 
-def process_MAIL():                                      # evaluates MAIL command
+def process_MAIL():
     m, i = nameis('MAIL')
     if not m:
         return nameerror()
@@ -39,13 +42,14 @@ def process_MAIL():                                      # evaluates MAIL comman
     if not e:
         return 501
 
-    clearinfo()						# clears any previously recorded information for a new email
+    clearinfo()
     text.append("From: " + reversepath)
     setstate('RCPT')
     return 250
 
 
-def process_RCPT():                                     # evaluates RCPT command
+# evaluates RCPT command
+def process_RCPT():
     r, i = nameis('RCPT')
     if not r:
         return nameerror()
@@ -60,10 +64,12 @@ def process_RCPT():                                     # evaluates RCPT command
     return 250
 
 
-def process_DATA():                                    # evaluates DATA command
+def process_DATA():
     d, i = nameis('DATA')
+
+    # unlimited RCPT commands until a valid DATA command
     if not d:
-        return process_RCPT()				# unlimited RCPT commands until a valid DATA command
+        return process_RCPT()				
 
     if not is_end(i):
         return 501
@@ -72,7 +78,8 @@ def process_DATA():                                    # evaluates DATA command
     return 354
 
 
-def process_TEXT():                                     # Appends text until <CRLF>.<CRLF> typed
+# Appends text until <CRLF>.<CRLF> typed
+def process_TEXT():                                     
     if msg == '.':
         createfiles()
         setstate('MAIL')
@@ -82,7 +89,8 @@ def process_TEXT():                                     # Appends text until <CR
         return -1
 
 
-def nameis(name):                                       # checks command name; makes sure a space, tab or <CRLF> follows
+# checks command name; makes sure a space, tab or <CRLF> follows
+def nameis(name):                                       
     n, i = equals(0, name)
     if not n:
         return False, i
@@ -118,19 +126,22 @@ def nameis(name):                                       # checks command name; m
     return True, skipspace(i)
 
 
-def nameerror():                                        # used when a command name doesn't match the expected command name
+# used when a command name doesn't match the expected command name
+def nameerror():                                        
     for command in COMMAND_LIST:
         if nameis(command)[0]:
             return 503
     return 500
 
 
-def clearinfo():                                        # Clears the list of forward-paths and text lines; used before the first valid MAIL reverse-path is recorded
+# Clears the list of forward-paths and text lines; used before the first valid MAIL reverse-path is recorded
+def clearinfo():                                        
     global fwdlist, text
     fwdlist, text = [], []
 
 
-def createfiles():					# Stores the sender, recipients, and message body in each file
+# Stores the sender, recipients, and message body in each file
+def createfiles():					
     for fwdpath in fwdlist:
 	filename = "forward/" + fwdpath
         fwdfile = open(filename, 'a+')
@@ -141,7 +152,8 @@ def createfiles():					# Stores the sender, recipients, and message body in each
         fwdfile.close()
 
 
-def endpath(i):						# evaluates end of MAIL and RCPT commands; returns the forward - or reverse - path
+# evaluates end of MAIL and RCPT commands; returns the forward - or reverse - path
+def endpath(i):
     start = i
 
     pa, i = path(i)
@@ -161,7 +173,8 @@ def equals(i, st):
     return True, i
 
 
-def skipspace(i):					# skips over nullspace
+# skips over nullspace
+def skipspace(i):					
     return whitespace(i)[1]
 
 
@@ -172,10 +185,11 @@ def whitespace(i):
 
 
 def sp(i):
-    return has(i) and msg[i] in SPACES
+    return has(i) and msg[i] in [" ", "        "]
 
 
-def path(i):						# for reverse- or forward- paths
+# for reverse- or forward- paths
+def path(i):						
     left, i = equals(i, '<')
     if not left:
         return False, i
@@ -248,6 +262,7 @@ def let_dig(i):
 
 
 def special(i):
+    SPECIALS = ["<", ">", "(", ")", "[", "]", "\\", ".", ",", ";", ":", "@", '"']
     return has(i) and msg[i] in SPECIALS
 
 
@@ -255,50 +270,18 @@ def has(i):
     return 0 <= i and i < len(msg)
 
 
-def is_end(i):						# used to check if we've evaluated the entire input string
+# used to check if we've evaluated the entire input string
+def is_end(i):						
     return i == len(msg)
 
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
-# global variables
+
 
 global msg                                              # Stores the current line of raw_input()
-
 global fwdlist                                          # Array that stores each forward-path
-
 global text                                             # Array that stores each line of text for the message body
-
 global state                                            # Tracks the current state of the machine (determines what kind of input is expected)
-
-global SPECIALS                                         # Stores list of special characters
-SPECIALS = ["<", ">", "(", ")", "[", "]", "\\", ".", ",", ";", ":", "@", '"']
-
-global SPACES                                           # For the tab and space characters
-SPACES = [" ", "        "]
-
-global COMMAND_LIST                                     # Stores list of valid commands
-COMMAND_LIST = ['DATA', 'MAIL', 'RCPT']
-
-global STATE_MAP                                        # Maps states with their corresponding methods
-STATE_MAP = {
-    'MAIL' : process_MAIL,
-    'RCPT' : process_RCPT,
-    'DATA' : process_DATA,
-    'TEXT' : process_TEXT
-}
-
-global RESPONSE_MAP                                     # Maps success- and error- codes to their messages
-RESPONSE_MAP = {
-    250 : '250 OK',
-    354 : '354 Start mail input; end with <CRLF>.<CRLF>',
-    500 : '500 Syntax error: command unrecognized',
-    501 : '501 Syntax error in parameters or arguments',
-    503 : '503 Bad sequence of commands',
-}
-
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------
-# start main method
-
 
 state = "MAIL"                                          # Initializes state to "MAIL" and processes input line-by-line until ctrl-d is pressed or end-of-file reached
 while True:
