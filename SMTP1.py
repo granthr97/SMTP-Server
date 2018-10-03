@@ -7,10 +7,10 @@ def processinput():
     print(msg)
 
     STATE_MAP = {
-    'MAIL' : process_MAIL,
-    'RCPT' : process_RCPT,
-    'DATA' : process_DATA,
-    'TEXT' : process_TEXT
+    'MAIL' : processMAIL,
+    'RCPT' : processRCPT,
+    'DATA' : processDATA,
+    'TEXT' : processTEXT
     }
 
     RESPONSE_MAP = {
@@ -24,17 +24,35 @@ def processinput():
     # Execute code corresponding to the current state
     code = STATE_MAP[state]()				
     if code != -1:
-	# processTEXT() returns -1 unless <CRLF>.<CRLF> is entered
+		# processTEXT() returns -1 unless <CRLF>.<CRLF> is entered
         print(RESPONSE_MAP[code])
 
 	
-def setstate(newstate):
+def setState(newstate):
     global state
     state = newstate
 
 
-def process_MAIL():
-    m, i = nameis('MAIL')
+def commandName(tokens):
+	i = 0;
+	n = 0;
+	while n < len(tokens):
+		token = tokens[n]
+		s, i = stringIs(i, token)
+		if not s:
+			return False, i
+		
+		if n < len(tokens) - 1:
+			w, i = whitespace(i)
+			if not w:
+				return False, i
+			
+		n += 1
+	return True, skipspace(i)
+		
+
+def processMAIL():
+    m, i = commandName(['MAIL', 'FROM:'])
     if not m:
         return nameerror()
 
@@ -42,15 +60,14 @@ def process_MAIL():
     if not e:
         return 501
 
-    clearinfo()
+    clearInfo()
     text.append("From: " + reversepath)
-    setstate('RCPT')
+    setState('RCPT')
     return 250
 
 
-# evaluates RCPT command
-def process_RCPT():
-    r, i = nameis('RCPT')
+def processRCPT():
+    r, i = commandName(['RCPT', 'TO:'])
     if not r:
         return nameerror()
 
@@ -60,88 +77,50 @@ def process_RCPT():
 
     text.append("To: " + fwdpath)
     fwdlist.append(fwdpath[1 : len(fwdpath) - 1])
-    setstate('DATA')
+    setState('DATA')
     return 250
 
 
-def process_DATA():
-    d, i = nameis('DATA')
+def processDATA():
+    d, i = commandName(['DATA'])
 
     # unlimited RCPT commands until a valid DATA command
     if not d:
-        return process_RCPT()				
+        return processRCPT()				
 
-    if not is_end(i):
+    if not isEnd(i):
         return 501
 
-    setstate('TEXT')
+    setState('TEXT')
     return 354
 
 
 # Appends text until <CRLF>.<CRLF> typed
-def process_TEXT():                                     
+def processTEXT():                                     
     if msg == '.':
-        createfiles()
-        setstate('MAIL')
+        createFiles()
+        setState('MAIL')
         return 250
     else:
         text.append(msg)
         return -1
 
-
-# checks command name; makes sure a space, tab or <CRLF> follows
-def nameis(name):                                       
-    n, i = equals(0, name)
-    if not n:
-        return False, i
-
-    if name == 'MAIL':
-        w, i = whitespace(i)
-        if not w:
-            return False, i
-
-        f, i = equals(i, 'FROM:')
-        if not f:
-            return False, i
-       
-        if has(i) and not (sp(i) or msg[i] == '<'):
-            return False, i
-
-    elif name == 'RCPT':
-        w, i = whitespace(i)
-        if not w:
-            return False, i
-
-        t, i = equals(i, 'TO:')
-        if not t:
-            return False, i
-
-        if has(i) and not (sp(i) or msg[i] == '<'):
-            return False, i
-
-    elif name == 'DATA':
-        if has(i) and not sp(i):
-            return False, i
-
-    return True, skipspace(i)
-
-
+	
 # used when a command name doesn't match the expected command name
 def nameerror():                                        
-    for command in COMMAND_LIST:
-        if nameis(command)[0]:
-            return 503
+    if commandName(['RCPT', 'TO:'])[0] or commandName(['MAIL', 'FROM:'])[0] or commandName(['DATA'])[0]:
+	return 503
     return 500
 
 
 # Clears the list of forward-paths and text lines; used before the first valid MAIL reverse-path is recorded
-def clearinfo():                                        
+def clearInfo():                                        
     global fwdlist, text
     fwdlist, text = [], []
 
 
 # Stores the sender, recipients, and message body in each file
-def createfiles():					
+def createFiles():					
     for fwdpath in fwdlist:
 	filename = "forward/" + fwdpath
         fwdfile = open(filename, 'a+')
@@ -163,8 +142,14 @@ def endpath(i):
     end = i
 
     i = skipspace(i)
-    return is_end(i), msg[start:end]
+    return isEnd(i), msg[start:end]
 
+
+# determines if the string at a particular position, terminated by a non let-dig, matches the given string
+def stringIs(i, st):
+	e, i = equals(i, st)
+	return e and (isEnd(i) or not let_dig(i)), i
+		
 
 def equals(i, st):
     for ch in st:
@@ -274,7 +259,7 @@ def has(i):
 
 
 # used to check if we've evaluated the entire input string
-def is_end(i):						
+def isEnd(i):						
     return i == len(msg)
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -299,3 +284,4 @@ while True:
         processinput()
     except EOFError:
         exit()
+
