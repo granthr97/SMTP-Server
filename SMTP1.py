@@ -152,7 +152,8 @@ def createfiles():
         fwdfile.close()
 
 
-# evaluates end of MAIL and RCPT commands; returns the forward - or reverse - path
+# Evaluates end of MAIL and RCPT commands.
+# Returns returns (1) whether the command is valid and (b) the forward - or reverse - path obtained
 def endpath(i):
     start = i
 
@@ -162,7 +163,7 @@ def endpath(i):
     end = i
 
     i = skipspace(i)
-    return not has(i), msg[start:end]
+    return is_end(i), msg[start:end]
 
 
 def equals(i, st):
@@ -184,6 +185,7 @@ def whitespace(i):
     return False, i
 
 
+# space or tab character
 def sp(i):
     return has(i) and msg[i] in [" ", "        "]
 
@@ -266,6 +268,7 @@ def special(i):
     return has(i) and msg[i] in SPECIALS
 
 
+# Verifies that we're checking an index contained in the "msg" string; used to avoid any index out-of-bound errors
 def has(i):
     return 0 <= i and i < len(msg)
 
@@ -274,16 +277,23 @@ def has(i):
 def is_end(i):						
     return i == len(msg)
 
-
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Store the current line of raw_input()
+global msg
 
+# Store each forward-path in an array
+global fwdlist           
 
-global msg                                              # Stores the current line of raw_input()
-global fwdlist                                          # Array that stores each forward-path
-global text                                             # Array that stores each line of text for the message body
-global state                                            # Tracks the current state of the machine (determines what kind of input is expected)
+ # Store each line of text for the message body in an array
+global text                  
 
-state = "MAIL"                                          # Initializes state to "MAIL" and processes input line-by-line until ctrl-d is pressed or end-of-file reached
+# Track the current state of the machine (determines what kind of input is expected)
+global state         
+
+# Initialize state to "MAIL"
+state = "MAIL"       
+
+# Process input line-by-line until ctrl-d is pressed or end-of-file reached
 while True:
     try:
         processinput()
