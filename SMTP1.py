@@ -24,7 +24,7 @@ def processinput():
     # Execute code corresponding to the current state
     code = STATE_MAP[state]()				
     if code != -1:
-	# processTEXT state returns -1 unless <CRLF>.<CRLF> is entered
+	# processTEXT() returns -1 unless <CRLF>.<CRLF> is entered
         print(RESPONSE_MAP[code])
 
 	
