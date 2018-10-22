@@ -17,7 +17,7 @@ def processInput():
 
 def compileData():
     global data
-    data += "--98766789\n"
+    data += "--98766789\n"r	# TODO: only works for one attachment: make number variable
     data += "Content-Transfer-Encoding: quoted-printable\n"
     data += "Content-Type: text/plain\n\n"
     data += message
@@ -116,9 +116,8 @@ def getAttachment():
     data += "Content-Type: multipart/mixed; boundary=98766789\n\n"
 
 
-def getResponse(n = -1):                        # Obtains a response code. If expected response code is provided and differs from actual response code, then quit.
-    response = clientSocket.recv(1024).decode()
-    # sys.stderr.write(str(response + '\n'))
+def getResponse(n = -1):                        	# Obtains a response code. If expected response code is -
+    response = clientSocket.recv(1024).decode() 	# - provided and differs from actual response code, then quit.
     try:
         if n != -1 and int(response[0:3]) != n:
 	    print('Bad SMTP receipt. Terminating program.')
@@ -129,6 +128,9 @@ def getResponse(n = -1):                        # Obtains a response code. If ex
 def setmsg(newmessage):
     global msg
     msg = newmessage
+
+
+# ---- String Parsing Methods ---#
 
 
 def endpath(i):
@@ -267,6 +269,9 @@ def isEnd(i):
     return i == len(msg)
 
 
+# --- Socket/Connection Methods --- #
+
+
 def getServerName():
     try:
         return str(sys.argv[1])
@@ -310,6 +315,10 @@ def smtpquit():
         clientSocket.close()
         exit()
 
+	
+# --- Main Method --- #
+
+# (1) Make connection
 try:
     serverName = str(sys.argv[1]) 
     serverPort = int(sys.argv[2]) 
@@ -318,11 +327,13 @@ except:
     print 'Error opening socket. Terminating program.'
     exit()
 
+# (2) Read information from user
 try:
     processInput()
 except:
     print 'Error processing input. Terminating program.'
 
+# (3) Send mail to server
 try:
     sendmail()
 except:
