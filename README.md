@@ -1,6 +1,6 @@
 # SMTP-Server
 
-These are working SMTP client/server programs that I developed for a course on Computer Networking and Internet Protocols. They utilize socket programming and homemade string-parsing methods.
+These are working SMTP client/server programs that I developed for a course on Computer Networking and Internet Protocols. They utilize socket programming and self-written string-parsing methods.
 
 Client.py is a working SMTP Client program which takes as arguments (A) a domain name for a machine that hosts an SMTP server application and (B) the port number. It reads an email which the user enters, verifies the grammar of the user information (for instance, domain names), establishes a connection with the specified server via the specified port, and sends a sequence of SMTP-compliant messages to the server in order to transfer the email.
 
