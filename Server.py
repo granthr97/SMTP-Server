@@ -182,6 +182,9 @@ def setmsg(newmessage):
     msg = newmessage
 
 
+# --- String parsing methods --- #
+
+
 def endpath(i):
     start = i
 
@@ -316,6 +319,10 @@ def has(i):
 # used to check if we've evaluated the entire input string
 def isEnd(i):						
     return i == len(msg)
+
+
+# --- Main method --- #
+
 
 try:
     serverPort = int(sys.argv[1])
