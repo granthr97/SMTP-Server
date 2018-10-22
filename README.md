@@ -1,6 +1,9 @@
 # SMTP-Server
-Basic SMTP server for the Internet Services and Protocols course. Coded in Python.
 
-SMTP1.py parses valid sequences of MAIL FROM, RCPT TO, and DATA commands entered through standard input. It creates forward-files for every recipient after every valid DATA command is entered.
+These are working SMTP client/server programs that I developed for a course on Computer Networking and Internet Protocols. They utilize socket programming and homemade string-parsing methods.
 
-SMTP2.py takes a forward-file consisting of reverse-paths (starting with "From:"), forward-paths (starting with "To:") and message bodies as an argument. It converts that forward-file into SMTP messages (printed onto standard-output) and continues as long as the SMTP response (simulated through user-input) matches the expected response.
+Client.py is a working SMTP Client program which takes as arguments (A) a domain name for a machine that hosts an SMTP server application and (B) the port number. It reads an email which the user enters, verifies the grammar of the user information (for instance, domain names), establishes a connection with the specified server via the specified port, and sends a sequence of SMTP-compliant messages to the server in order to transfer the email.
+
+Server.py is a working SMTP Server program which takes a port as its only argument. It waits for connections from SMTP client programs via the specified port, receives and verifies the grammar of commands from those connections, and once a complete sequence of SMTP commands have been received, stores the email in a local file/directory.
+
+ClientEC.py is a working version of Client.py (done for extra credit) which is able to send a multimedia attachment in the email.
