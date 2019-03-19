@@ -5,16 +5,18 @@ import sys
 from socket import *
 import os
 
+
 def processInput():
-    while not getFrom():
+    while not getFrom():	# Try until a correct mail address is given
         print ("Error: Bad address.")
-    while not getTo():
+    while not getTo():		# Try until a correct mail address is given
         print ("Error: Bad address.")
     getSubject()
     getMessage()
     getAttachment()
     compileData()
 
+	
 def compileData():
     global data
     data += "--98766789\n"r	# TODO: only works for one attachment: make number variable
@@ -24,26 +26,29 @@ def compileData():
     data += "--98766789\n"
     data += "Content-Transfer-Encoding: base64\n"
     data += "Content-Type: image/" + os.path.splitext(filename)[1][1:] + "\n\n"
+	
     attachedfile = open(filename, "rb")
     encoded_file = base64.b64encode(attachedfile.read())
     attachedfile.close()
+
     data += encoded_file
     data += "\n--98766789--"
     data += '\n.\n'
 
+	
 def getFrom():
     print ("From:")
     global msg
     msg = raw_input()
 
-    mail, i = mailbox(0)
+    mail, i = mailbox(0)	# From Server.py: verifies that the string starting at index 0 matches the "mailbox" grammar
     if not mail:
         return False
     i = skipspace(i)
-    if not isEnd(i):
+    if not isEnd(i):		# Must be followed by nullspace
         return False
 
-    global data
+    global data			# Wrap mail address to send via SMTP message
     data = ""
     data += ("From: <" + msg + ">\n")
 
@@ -53,7 +58,7 @@ def getFrom():
     return True
 
 
-def getTo():
+def getTo():			# Get a sequence of mail addresses to send the message to
     print ("To:")
     global msg
     msg = raw_input()
@@ -66,13 +71,13 @@ def getTo():
         return False
     fwdpaths.append( "<" + msg[0:i] + ">")
 
-    while not isEnd(skipspace(i)):
-        c, i = equals(i, ',')
-        if not c:
+    while not isEnd(skipspace(i)):	# Get each subsequent mail address (if they exist) until the remaining string is nullspace
+        c, i = equals(i, ',')		# Verify that the mail addresses are comma-separated
+        if not c:			
             return False
-        i = skipspace(i)
+        i = skipspace(i)		# Skip space after commas
         start = i
-        box, i = mailbox(i)
+        box, i = mailbox(i)		# Check that the mailbox grammar is correct
         if not box:
             return False
         fwdpaths.append("<" + msg[start:i] + ">")
@@ -116,8 +121,8 @@ def getAttachment():
     data += "Content-Type: multipart/mixed; boundary=98766789\n\n"
 
 
-def getResponse(n = -1):                        	# Obtains a response code. If expected response code is -
-    response = clientSocket.recv(1024).decode() 	# - provided and differs from actual response code, then quit.
+def getResponse(n = -1):                        	# Obtains an arbitrary response code. If expected response code is
+    response = clientSocket.recv(1024).decode() 	# provided and differs from actual response code, then quit.
     try:
         if n != -1 and int(response[0:3]) != n:
 	    print('Bad SMTP receipt. Terminating program.')
