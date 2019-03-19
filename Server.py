@@ -7,34 +7,43 @@ from socket import *
 # Saves and prints an individual line of user-input; process input depending on current state
 def processinput():
     STATE_MAP = {
-    'MAIL' : processMAIL,
-    'RCPT' : processRCPT,
-    'DATA' : processDATA,
-    'TEXT' : processTEXT
+	'MAIL' : processMAIL,
+	'RCPT' : processRCPT,
+	'DATA' : processDATA,
+	'TEXT' : processTEXT
     }
 
     RESPONSE_MAP = {
-    221 : '221 ' + platform.node() + ' closing connection',
-    250 : '250 OK',
-    354 : '354 Start mail input; end with <CRLF>.<CRLF>',
-    500 : '500 Syntax error: command unrecognized',
-    501 : '501 Syntax error in parameters or arguments',
-    503 : '503 Bad sequence of commands',
+    	221 : '221 ' + platform.node() + ' closing connection',
+	250 : '250 OK',
+	354 : '354 Start mail input; end with <CRLF>.<CRLF>',
+	500 : '500 Syntax error: command unrecognized',
+	501 : '501 Syntax error in parameters or arguments',
+	503 : '503 Bad sequence of commands',
     }
 
 
     global msg
     msg = str(connectionSocket.recv(1024).decode())
 
+    # check if command is "QUIT"
     if QUIT():
         connectionSocket.send(RESPONSE_MAP[221].encode())
+	
+	# Exits input loop
         return False
 	
     # Execute code corresponding to the current state
-    code = STATE_MAP[state]()				
+    # (state respresents what we're expecting: to address, from address, message, etc.)
+    # "code" is the number to send to the client program
+    code = STATE_MAP[state]()
+	
+    # processTEXT() returns -1 unless <CRLF>.<CRLF> is entered, in which it returns 250
     if code != -1:
-		# processTEXT() returns -1 unless <CRLF>.<CRLF> is entered
+	
+	# Send data according to the current state
         connectionSocket.send(RESPONSE_MAP[code].encode())
+
     return True
 
 	
@@ -43,6 +52,7 @@ def setState(newstate):
     state = newstate
 
 
+# Check if a series of tokens match the beginning of the string, separated by whitespace
 def commandName(tokens):
 	i = 0;
 	n = 0;
@@ -340,18 +350,24 @@ while True:
         connectionSocket, addr = serverSocket.accept()
         connected = True
 
+	# platform.node(): Network name
         connectionSocket.send(('220 ' + platform.node()).encode())
+	
         global msg
         msg = connectionSocket.recv(1024).decode()
         hello, hostname = processHELO()
+	
         if hello != 250:
             connectionSocket.send('221 ' + platform.node() + ' closing connection')
+	
         else:
             connectionSocket.send(('250 Hello ' + hostname + " pleased to meet you").encode())
             state = "MAIL"
             while processinput():
                 pass
+	
         connectionSocket.close()
+	
     except:
         if not connected:
             print "Error connecting to client process. Please try again."
